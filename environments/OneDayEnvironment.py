@@ -12,12 +12,17 @@ class OneDayEnvironment(AbstractEnvironment):
         self.num_step = 0
         self.market_cap = market_cap
         self.money = money
+        self.initial_money = money
         self.history = copy.copy(history)
         self.last_state = None
         self.delta = delta
 
         self.last_date = None
 
+    def reset(self):
+        self.last_date = None
+        self.num_step = 0
+        self.money = self.initial_money
 
     def step(self, action):
 
@@ -43,7 +48,7 @@ class OneDayEnvironment(AbstractEnvironment):
 
         self.num_step+=1
         self.done = False
-        if self.num_step >= len(self.history) or self.last_date != now_date:
+        if self.num_step >= len(self.history)-1 or self.last_date != now_date:
             self.done = True
 
         now_date, next_open, next_close, next_high, next_low, next_volume = self.history[self.num_step]
