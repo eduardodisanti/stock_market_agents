@@ -14,7 +14,7 @@ from sklearn.model_selection import train_test_split
 import pickle
 import numpy as np
 
-SYMBOL   = "FCAU"
+SYMBOL   = "JNJ"
 PATIENCE = 10
 MIN_VAR  = 2
 
