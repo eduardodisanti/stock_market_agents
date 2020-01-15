@@ -2,7 +2,7 @@ import pickle
 import matplotlib.pyplot as plt
 
 from environments.AbstractEnvironment import action_BUY
-from environments.OneDayEnvironment import OneDayEnvironment
+from environments.FullHistoryEnvironment import OneDayEnvironment
 
 def choose_action(state):
     action = env.sample()

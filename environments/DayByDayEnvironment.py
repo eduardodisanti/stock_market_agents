@@ -9,11 +9,11 @@ action_SELL = 1
 action_BUY  = 0
 
 
-class OneDayEnvironment(AbstractEnvironment):
+class DayByDayEnvironment(AbstractEnvironment):
 
-    def __init__(self, history, market_cap=0, money=100, delta = 0.01, inflation = 0.03):
+    def __init__(self, history, market_cap=0, money=100, delta = 0.01, inflation = 0.001, num_days = 77):
 
-        super(OneDayEnvironment, self).__init__()
+        super(DayByDayEnvironment, self).__init__()
         self.num_step = 0
         self.market_cap = market_cap
         self.money = money
@@ -23,22 +23,26 @@ class OneDayEnvironment(AbstractEnvironment):
         self.last_state = None
         self.delta = delta
         self.inflation = inflation
+        self.num_days = num_days
+
+        self.offset = self.compute_offset()
 
         self.action_space = np.array([action_SELL, action_HOLD, action_BUY])
-        self.current_state = self.make_state_from_history(self.num_step)
+        self.current_state = self.make_state_from_history(self.get_index())
 
         self.last_date = None
 
     def reset(self):
         self.last_date = None
         self.num_step = 0
+        self.offset = self.compute_offset()
         self.money = self.initial_money
-        self.current_state = self.make_state_from_history(self.num_step)
+        self.current_state = self.make_state_from_history(self.get_index())
         return self.current_state
 
     def step(self, action):
 
-        current_state = self.history[self.num_step]
+        current_state = self.history[self.get_index()]
         now_date, now_open, now_close, now_high, now_low, now_volume = current_state
         if self.last_state == None:
             self.last_state = current_state
@@ -49,24 +53,29 @@ class OneDayEnvironment(AbstractEnvironment):
         now_date, last_open, last_close, last_high, last_low, last_volume = self.last_state
 
         if action == action_BUY:
-            self.money -= now_close
-            self.stock += 1
+            self.stock += int(self.money / now_close)
+            self.money -= int(self.money / now_close) * now_close
         elif action == action_SELL:
-            self.money += now_close
-            self.stock -= 1
+            self.money += int(self.money / now_close) * now_close
+            self.stock -= int(self.money / now_close)
 
         self.num_step+=1
         self.done = False
-        if self.num_step >= len(self.history)-1 or self.money <= now_open and self.stock <= 0: # or self.last_date != now_date:
+        if self.num_step >= self.num_days or self.money <= now_open and self.stock <= 0: # or self.last_date != now_date:
             self.done = True
-            self.money *= (1 - self.inflation)
+            self.money *= 1 - self.inflation
 
-        now_date, next_open, next_close, next_high, next_low, next_volume = self.history[self.num_step]
+        idx = self.get_index()
+        now_date, next_open, next_close, next_high, next_low, next_volume = self.history[idx]
 
         now_money = self.money + self.stock * next_close
 
-        reward = np.sign(now_money - prev_money)
 
+        reward = np.sign(now_money - prev_money)
+        if reward == 0 and action == action_HOLD:
+                reward = 1
+        else:
+                reward = -1
         next_state = np.array([next_open, next_close, next_high, next_low, next_volume])
 
         info = {'money':self.money, 'stock':self.stock, 'next': next_close}
@@ -76,7 +85,7 @@ class OneDayEnvironment(AbstractEnvironment):
         return len(self.action_space)
 
     def get_state_space(self):
-        return len(self.make_state_from_history(self.num_step))
+        return len(self.make_state_from_history(self.get_index()))
 
     def make_state_from_history(self, i):
 
@@ -87,3 +96,13 @@ class OneDayEnvironment(AbstractEnvironment):
 
     def sample(self):
         return random.choice(self.action_space)
+
+    def compute_offset(self):
+
+        i = random.randint(0, len(self.history) - self.num_days)
+
+        return(i)
+
+    def get_index(self):
+
+        return self.num_step + self.offset - 1
