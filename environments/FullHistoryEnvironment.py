@@ -2,18 +2,15 @@ import copy
 import random
 
 import numpy as np
+
+from agents.statics import action_HOLD, action_BUY, action_SELL
 from environments.AbstractEnvironment import AbstractEnvironment
 
-action_HOLD = 2
-action_SELL = 1
-action_BUY  = 0
-
-
-class OneDayEnvironment(AbstractEnvironment):
+class FullHistoryEnvironment(AbstractEnvironment):
 
     def __init__(self, history, market_cap=0, money=100, delta = 0.01, inflation = 0.0):
 
-        super(OneDayEnvironment, self).__init__()
+        super(FullHistoryEnvironment, self).__init__()
         self.num_step = 0
         self.market_cap = market_cap
         self.money = money
@@ -24,6 +21,7 @@ class OneDayEnvironment(AbstractEnvironment):
         self.delta = delta
         self.inflation = inflation
 
+        from agents.statics import action_SELL
         self.action_space = np.array([action_SELL, action_HOLD, action_BUY])
         self.current_state = self.make_state_from_history(self.num_step)
 
@@ -65,14 +63,11 @@ class OneDayEnvironment(AbstractEnvironment):
 
         now_money = self.money + self.stock * next_close
 
-        if self.done:
-            reward = np.sign(now_money - prev_money)
-            if reward == 0 and action == action_HOLD:
-                reward = 1
-            else:
-                reward = -1
+        reward = np.sign(now_money - prev_money)
+        if reward == 0 and action == action_HOLD:
+            reward = 1
         else:
-            reward = 0
+            reward = -1
         next_state = np.array([next_open, next_close, next_high, next_low, next_volume])
 
         info = {'money':self.money, 'stock':self.stock, 'next': next_close}

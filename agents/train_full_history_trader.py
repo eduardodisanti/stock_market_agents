@@ -4,8 +4,9 @@ import numpy as np
 import torch
 
 from DRL.dqn_agent import Agent
+from agents.statics import action_BUY, action_SELL, action_HOLD
 
-from environments.FullHistoryEnvironment import OneDayEnvironment, action_BUY, action_SELL, action_HOLD
+from environments.FullHistoryEnvironment import FullHistoryEnvironment
 
 
 def choose_action(state, epsilon):
@@ -14,7 +15,7 @@ def choose_action(state, epsilon):
 
     return action
 
-SYMBOL = "SPCE"
+SYMBOL = "JNJ"
 
 with open("../data/"+SYMBOL+"/history.pckl", "rb") as fb:
     _intraday = pickle.load(fb)
@@ -26,11 +27,12 @@ with open("../data/"+SYMBOL+"/history.pckl", "rb") as fb:
         v = [d, float(i['open']), float(i['close']), float(i['high']), float(i['close']), int(i['volume'])]
         intraday.append(v)
 
-original_money = 1000
+    intraday = [a for a in reversed(intraday)]
+original_money = 5000
 stock = 0
 money = original_money
 
-env = OneDayEnvironment(intraday, market_cap=0, money=money, delta = 0.01)
+env = FullHistoryEnvironment(intraday, market_cap=0, money=money, delta = 0.01)
 action_space = env.get_action_space()
 state_space  = env.get_state_space()
 
@@ -38,7 +40,7 @@ state = env.get_state_space()
 
 hist = []
 EPS_START = 1  # START EXPLORING A LOT
-GAMMA = 0.9999  # discount factor -
+GAMMA = 0.999999  # discount factor -
 
 BUFFER_SIZE = int(1e3)  # replay buffer size
 BATCH_SIZE = 64  # minibatch size
@@ -49,7 +51,7 @@ UPDATE_EVERY = 4  # how often to update the network
 agent = Agent(state_size=state_space, action_size=action_space, seed=1, gamma=GAMMA, buffer_size=BUFFER_SIZE,
               batch_size=BATCH_SIZE, tau=TAU, lr=LR, update_every=UPDATE_EVERY,  fc1_neurons=64, fc2_neurons=64)
 
-TARGET_AVG_SCORE = 1.12
+TARGET_AVG_SCORE = original_money * 1000
 NUM_OF_TARGET_EPISODES_FOR_AVG = 100
 
 eps_min = 0.001  # EVEN EXPLORE AFTER MANY EPISODES
@@ -112,13 +114,13 @@ while not trained:
     avg = np.average(lq[-NUM_OF_TARGET_EPISODES_FOR_AVG:])
     avgs.append(avg)
 
-    if (len(avgs)%10) == 0:
+    if (len(avgs)%1) == 0:
         plt.plot(avgs, ".", c="b")
         plt.pause(0.1)
         print("act", la, "assess", behaviour_assess, "rate", behaviour_assess[1] / behaviour_assess[-1])
         print("episodes", episodes, "last score", score, "current eps", eps, "avg", avg, "best", best_score, "money", money, "stock", stock, "next mark", next_mark, "total", total_assets)
         if avg > best_score:
-            torch.save(agent.qnetwork_local.state_dict(), 'smart_trader.pt')
+            torch.save(agent.qnetwork_local.state_dict(), SYMBOL+'_daily_trader.pt')
             best_score = avg
 
     if avg > TARGET_AVG_SCORE and episodes > 10:
@@ -128,7 +130,7 @@ while not trained:
     if avg > TARGET_AVG_SCORE or episodes > 100000:
         trained = True
         if avg > best_score:
-            torch.save(agent.qnetwork_local.state_dict(), 'smart_trader.pt')
+            torch.save(agent.qnetwork_local.state_dict(), SYMBOL+'_full_trader.pt')
         print("Trained")
         print("episodes", episodes, "last score", score, "current eps", eps, "avg", avg, "money", money, "stock", stock, "next mark", next_mark, "assets", total_assets)
 

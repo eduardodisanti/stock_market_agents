@@ -4,8 +4,9 @@ import numpy as np
 import torch
 
 from DRL.dqn_agent import Agent
+from agents.statics import action_BUY, action_SELL, action_HOLD
 
-from environments.DayByDayEnvironment import DayByDayEnvironment, action_BUY, action_SELL, action_HOLD
+from environments.DayByDayEnvironment import DayByDayEnvironment
 
 
 def choose_action(state, epsilon):
@@ -14,7 +15,7 @@ def choose_action(state, epsilon):
 
     return action
 
-SYMBOL = "JNJ"
+SYMBOL = "SPCE"
 
 with open("../data/"+SYMBOL+"/intraday.pckl", "rb") as fb:
     _intraday = pickle.load(fb)
@@ -28,11 +29,11 @@ with open("../data/"+SYMBOL+"/intraday.pckl", "rb") as fb:
 
     intraday = [a for a in reversed(intraday)]
 
-original_money = 10000
+original_money = 1000
 stock = 0
 money = original_money
-num_steps = 77
-env = DayByDayEnvironment(intraday, market_cap=0, money=money, delta = 0.01, num_days=num_steps)
+num_steps = 154
+env = DayByDayEnvironment(intraday, market_cap=0, money=money, delta = 0.01, num_ops=num_steps)
 action_space = env.get_action_space()
 state_space  = env.get_state_space()
 
@@ -93,7 +94,7 @@ while not trained:
         if action == action_BUY and money * actual_price > 0 or action == action_SELL and stock > 0 or action == action_HOLD:
             la[action] += 1
             reward, next_state, done, info = env.step(action)
-            behaviour_assess[reward]+=1
+            behaviour_assess[np.sign(reward)]+=1
             money = info['money']
             stock = info['stock']
             next_mark = info['next']
@@ -120,7 +121,7 @@ while not trained:
         print("act", la, "assess", behaviour_assess, "rate", behaviour_assess[1] / behaviour_assess[-1])
         print("episodes", episodes, "last score", score, "current eps", eps, "avg", avg, "best", best_score, "money", money, "stock", stock, "next mark", next_mark, "total", total_assets)
         if avg > best_score:
-            torch.save(agent.qnetwork_local.state_dict(), 'smart_trader.pt')
+            torch.save(agent.qnetwork_local.state_dict(), SYMBOL+'_daily_trader.pt')
             best_score = avg
 
     if avg > TARGET_AVG_SCORE and episodes > NUM_OF_TARGET_EPISODES_FOR_AVG:
@@ -130,7 +131,7 @@ while not trained:
     if avg > TARGET_AVG_SCORE and episodes > NUM_OF_TARGET_EPISODES_FOR_AVG or episodes > 100000:
         trained = True
         if avg > best_score:
-            torch.save(agent.qnetwork_local.state_dict(), 'smart_trader.pt')
+            torch.save(agent.qnetwork_local.state_dict(), SYMBOL+'_daily_trader.pt')
         print("Trained")
         print("episodes", episodes, "last score", score, "current eps", eps, "avg", avg, "money", money, "stock", stock, "next mark", next_mark, "assets", total_assets)
 
