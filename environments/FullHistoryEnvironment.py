@@ -66,7 +66,7 @@ class FullHistoryEnvironment(AbstractEnvironment):
         reward = np.sign(now_money - prev_money)
         if reward == 0 and action == action_HOLD:
             reward = 1
-        else:
+        elif reward==0 and action != action_HOLD:
             reward = -1
         next_state = np.array([next_open, next_close, next_high, next_low, next_volume])
 

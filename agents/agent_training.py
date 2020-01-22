@@ -10,7 +10,7 @@ from environments.DayByDayEnvironment import DayByDayEnvironment
 
 class AgentTrainer():
     def __init__(self):
-
+        pass
 
 
 def choose_action(agent, state, epsilon):

@@ -15,7 +15,7 @@ def choose_action(state, epsilon):
 
     return action
 
-SYMBOL = "JNJ"
+SYMBOL = "TLRD"
 
 with open("../data/"+SYMBOL+"/history.pckl", "rb") as fb:
     _intraday = pickle.load(fb)
@@ -28,7 +28,7 @@ with open("../data/"+SYMBOL+"/history.pckl", "rb") as fb:
         intraday.append(v)
 
     intraday = [a for a in reversed(intraday)]
-original_money = 5000
+original_money = 100
 stock = 0
 money = original_money
 
@@ -51,7 +51,7 @@ UPDATE_EVERY = 4  # how often to update the network
 agent = Agent(state_size=state_space, action_size=action_space, seed=1, gamma=GAMMA, buffer_size=BUFFER_SIZE,
               batch_size=BATCH_SIZE, tau=TAU, lr=LR, update_every=UPDATE_EVERY,  fc1_neurons=64, fc2_neurons=64)
 
-TARGET_AVG_SCORE = original_money * 1000
+TARGET_AVG_SCORE = original_money * 1.3
 NUM_OF_TARGET_EPISODES_FOR_AVG = 100
 
 eps_min = 0.001  # EVEN EXPLORE AFTER MANY EPISODES
@@ -109,13 +109,14 @@ while not trained:
             state = next_state  # roll over the state to next time step
 
     episodes += 1
-    lq.append(score)
+    lq.append(total_assets)
 
     avg = np.average(lq[-NUM_OF_TARGET_EPISODES_FOR_AVG:])
     avgs.append(avg)
 
     if (len(avgs)%1) == 0:
         plt.plot(avgs, ".", c="b")
+        plt.title("Episodes" + str(episodes)+" "+SYMBOL)
         plt.pause(0.1)
         print("act", la, "assess", behaviour_assess, "rate", behaviour_assess[1] / behaviour_assess[-1])
         print("episodes", episodes, "last score", score, "current eps", eps, "avg", avg, "best", best_score, "money", money, "stock", stock, "next mark", next_mark, "total", total_assets)
@@ -125,9 +126,10 @@ while not trained:
 
     if avg > TARGET_AVG_SCORE and episodes > 10:
         times_solved += 1
+        consecutives_solved += 1
     else:
         consecutives_solved = 0
-    if avg > TARGET_AVG_SCORE or episodes > 100000:
+    if avg > TARGET_AVG_SCORE and consecutives_solved >= NUM_OF_TARGET_EPISODES_FOR_AVG or episodes > 100000:
         trained = True
         if avg > best_score:
             torch.save(agent.qnetwork_local.state_dict(), SYMBOL+'_full_trader.pt')
