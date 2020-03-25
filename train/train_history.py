@@ -14,11 +14,11 @@ from sklearn.model_selection import train_test_split
 import pickle
 import numpy as np
 
-SYMBOL   = "FCAU"
+SYMBOL   = "DAL"
 PATIENCE = 10
 MIN_VAR  = 2
 
-file_path = "data/"+SYMBOL+"/history.pckl"
+file_path = "../data/"+SYMBOL+"/history.pckl"
 
 with open(file_path, "rb") as fb:
     jfile = pickle.load(fb)
@@ -57,7 +57,7 @@ vY = vY[1:]
 scaler = MinMaxScaler()
 scaler.fit(X)
 
-dd.io.save("data/"+SYMBOL+"/" + "_scaler.h5", scaler)
+dd.io.save("../data/"+SYMBOL+"/" + "_scaler.h5", scaler)
 
 X = scaler.transform(X)
 
@@ -101,8 +101,8 @@ while not trained:
     if err >= last_err:
         notimp += 1
     else:
-        model.save("data/" + SYMBOL + "/" + "_model.h5")
-        plt.savefig("data/" + SYMBOL + "/trainfig.png")
+        model.save("../data/" + SYMBOL + "/" + "_model.h5")
+        plt.savefig("../data/" + SYMBOL + "/trainfig.png")
 
     trained =  err > last_err and notimp >= PATIENCE
 
@@ -111,10 +111,10 @@ while not trained:
     if trained:
         break
 
-model.save("data/"+SYMBOL+"/" + "_model.h5")
-plt.savefig("data/"+SYMBOL+"/trainfig.png")
+model.save("../data/"+SYMBOL+"/" + "_model.h5")
+plt.savefig("../data/"+SYMBOL+"/trainfig.png")
 plt.title("Loss")
-model.save("data/"+SYMBOL+"/" + "_model.h5")
+model.save("../data/"+SYMBOL+"/" + "_model.h5")
 plt.plot(hist.history['loss'], label="train");
 plt.legend()
 
