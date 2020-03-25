@@ -9,7 +9,10 @@ def load_historical_data(symbol):
 
     r = ds.get_history(symbol)
 
-    os.mkdir("data/"+symbol)
+    try:
+        os.mkdir("data/"+symbol)
+    except:
+        pass
     file_path = "data/"+symbol+"/history.pckl"
     with open(file_path, "wb") as fp:
         pickle.dump(r.json(), fp)
